@@ -139,6 +139,12 @@ std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string
 
             ///////////////////////////////////////////////////////////////////////////////////////////
             //Add your EXEC output here
+            if (current.partition_number != -1 ){
+                free_memory(&current);
+            }
+            unsigned int newsize= getsize(program_name, external_files);
+
+            
     
 
 
