@@ -6,7 +6,24 @@
  */
 
 #include<interrupts.hpp>
+static unsigned int NEXT_PID = 1;
 
+static inline void add_event(std::string& execution, int& t, int duration, const std::string& msg){
+    execution += std::to_string(t) + "," + std::to_string(duration) + ","+ msg +"\n";
+    t+= duration;
+
+    static inline void snapshot(std::string& systemstatus ,
+                                   int current_time,
+                                   const std::string& current_trace_line,
+                                   PCB current,
+                                   const std::vector<PCB>& wait_queue)
+{
+    systemstatus += "time: " + std::to_string(current_time) +
+                     "; current trace: " + current_trace_line + "\n";
+    systemstatus += print_PCB(current, wait_queue);
+    systemstatus += "\n";
+}
+}
 std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string> trace_file, int time, std::vector<std::string> vectors, std::vector<int> delays, std::vector<external_file> external_files, PCB current, std::vector<PCB> wait_queue) {
 
     std::string trace;      //!< string to store single line of trace file
@@ -17,7 +34,6 @@ std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string
     //parse each line of the input trace file. 'for' loop to keep track of indices.
     for(size_t i = 0; i < trace_file.size(); i++) {
         auto trace = trace_file[i];
-
         auto [activity, duration_intr, program_name] = parse_trace(trace);
 
         if(activity == "CPU") { //As per Assignment 1
