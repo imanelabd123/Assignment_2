@@ -139,14 +139,18 @@ std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string
 
             ///////////////////////////////////////////////////////////////////////////////////////////
             //Add your EXEC output here
-            if (current.partition_number != -1 ){
-                free_memory(&current);
+            PCB new_process(current.PID, current.PPID, program_name, current.size, -1);
+            bool place = allocate_memory(&new_process);
+
+            if(!place){
+                wait_queue.push_back(new_process);
+                add_event(execution, current_time, 1, "EXEC failed, not enough memory.");
+                wait_queue.push_back(new_process);
             }
-            unsigned int newsize= getsize(program_name, external_files);
-
-            
-    
-
+            else{
+                add_event(execution, current_time, 1, std::to_string(currnt.PID) + "replaced with " + std::to_string(program_name) + "allocated" + std::to_string(new_process.partition_number));
+            }
+            snapshot(system_status, current_time, trace, new_process, wait_queue);
 
             ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -162,6 +166,19 @@ std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string
             ///////////////////////////////////////////////////////////////////////////////////////////
             //With the exec's trace (i.e. trace of external program), run the exec (HINT: think recursion)
 
+            auto [exec_output, exec_status, exec_end_time] =
+            simulate_trace(exec_trace,
+                       current_time,
+                       vectors,
+                       delays,
+                       external_files,
+                       new_process,
+                       wait_queue);
+
+            execution      += exec_output;
+            system_status  += exec_status;
+            current_time    = exec_end_time;
+            }
 
 
             ///////////////////////////////////////////////////////////////////////////////////////////
