@@ -6,23 +6,17 @@
  */
 
 #include "interrupts.hpp"
+
 static unsigned int NEXT_PID = 1;
 
 static inline void add_event(std::string& execution, int& t, int duration, const std::string& msg){
     execution += std::to_string(t) + "," + std::to_string(duration) + ","+ msg +"\n";
     t+= duration;
-
-    static inline void snapshot(std::string& systemstatus ,
-                                   int current_time,
-                                   const std::string& current_trace_line,
-                                   PCB current,
-                                   const std::vector<PCB>& wait_queue)
-{
-    system_status += "time: " + std::to_string(current_time) +
-                     "; current trace: " + current_trace_line + "\n";
+}
+static inline void snapshot(std::string& system_status , int current_time, const std::string& current_trace_line, PCB current, const std::vector<PCB>& wait_queue){
+    system_status += "time: " + std::to_string(current_time) + "; current trace: " + current_trace_line + "\n";
     system_status += print_PCB(current, wait_queue);
     system_status += "\n";
-}
 }
 std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string> trace_file, int time, std::vector<std::string> vectors, std::vector<int> delays, std::vector<external_file> external_files, PCB current, std::vector<PCB> wait_queue) {
 
@@ -39,7 +33,8 @@ std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string
         if(activity == "CPU") { //As per Assignment 1
             execution += std::to_string(current_time) + ", " + std::to_string(duration_intr) + ", CPU Burst\n";
             current_time += duration_intr;
-        } else if(activity == "SYSCALL") { //As per Assignment 1
+        } 
+        else if(activity == "SYSCALL") { //As per Assignment 1
             auto [intr, time] = intr_boilerplate(current_time, duration_intr, 10, vectors);
             execution += intr;
             current_time = time;
@@ -49,7 +44,8 @@ std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string
 
             execution +=  std::to_string(current_time) + ", 1, IRET\n";
             current_time += 1;
-        } else if(activity == "END_IO") {
+        } 
+        else if(activity == "END_IO") {
             auto [intr, time] = intr_boilerplate(current_time, duration_intr, 10, vectors);
             current_time = time;
             execution += intr;
@@ -59,24 +55,26 @@ std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string
 
             execution +=  std::to_string(current_time) + ", 1, IRET\n";
             current_time += 1;
-        } else if(activity == "FORK") {
+        } 
+        else if(activity == "FORK") {
             auto [intr, time] = intr_boilerplate(current_time, 2, 10, vectors);
             execution += intr;
             current_time = time;
 
             ///////////////////////////////////////////////////////////////////////////////////////////
             //Add your FORK output here
-            PCB child(current.PID + 1, current.PID, current.program_name, current.size, -1)
+            PCB child(current.PID + 1, current.PID, current.program_name, current.size, -1);
             bool place = allocate_memory(&child);
-            if (!place){
+            if (place){     //swapped if and else, took out !
+                add_event(execution, current_time,1,"FORK child PID =" +std::to_string(child.PID)+ "allocated"+std::to_string(child.partition_number));
+            }
+            else{
                 wait_queue.push_back(child);
                 add_event(execution, current_time,1,"FORK child PID =" +std::to_string(child.PID)+ "waiting");
-            }else{
-                add_event(execution, current_time,1,"FORK child PID =" +std::to_string(child.PID)+ "allocated"+std::to_string(child.partition_number));
                     
             }
 
-            snapshot(system_status, current_time,trace, current,wait_queue);
+            snapshot(system_status, current_time,trace, current, wait_queue);
             ///////////////////////////////////////////////////////////////////////////////////////////
 
             //The following loop helps you do 2 things:
@@ -132,7 +130,8 @@ std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string
             ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-        } else if(activity == "EXEC") {
+        } 
+        else if(activity == "EXEC") {
             auto [intr, time] = intr_boilerplate(current_time, 3, 10, vectors);
             current_time = time;
             execution += intr;
@@ -148,7 +147,7 @@ std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string
                 wait_queue.push_back(new_process);
             }
             else{
-                add_event(execution, current_time, 1, std::to_string(currnt.PID) + "replaced with " + std::to_string(program_name) + "allocated" + std::to_string(new_process.partition_number));
+                add_event(execution, current_time, 1, std::to_string(current.PID) + "replaced with " + program_name + "allocated" + std::to_string(new_process.partition_number));
             }
             snapshot(system_status, current_time, trace, new_process, wait_queue);
 
@@ -167,7 +166,7 @@ std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string
             //With the exec's trace (i.e. trace of external program), run the exec (HINT: think recursion)
 
             auto [exec_output, exec_status, exec_end_time] =
-            simulate_trace(exec_trace,
+            simulate_trace(exec_traces,
                        current_time,
                        vectors,
                        delays,
@@ -178,17 +177,16 @@ std::tuple<std::string, std::string, int> simulate_trace(std::vector<std::string
             execution      += exec_output;
             system_status  += exec_status;
             current_time    = exec_end_time;
-            }
+        }
 
 
             ///////////////////////////////////////////////////////////////////////////////////////////
 
-            break; //Why is this important? (answer in report)
+        break; //Why is this important? (answer in report)
 
-        }
     }
 
-    return {execution, system_status, current_time};
+    return{execution, system_status, current_time};
 }
 
 int main(int argc, char** argv) {
